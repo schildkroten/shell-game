@@ -3,10 +3,13 @@
 
 #include <stdlib.h>
 
-typedef struct {} Map;
+typedef struct {
+  int rows;
+  int cols;
+  char **map;
+} Map;
 
 Map *new_map(size_t cols, size_t rows);
 int free_map(Map *map);
-int draw_map(Map *map);
 
 #endif

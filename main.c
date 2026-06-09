@@ -3,19 +3,45 @@
 #include <unistd.h>
 
 #include "lib/gamemanager.h"
-#include "lib/player.h"
-#include "lib/map.h"
 
 int main(int argc, char **argv) {
-  Map *map = new_map(10, 10);
+  GameManager *gm = new_gamemanager(10, 10);
 
-  if (draw_map(map) == -1) {
-    fprintf(stderr, "draw_map failed");
-    exit(1);
+  int c;
+  while (1) {
+    if (draw_map(gm) == -1) {
+      fprintf(stderr, "draw_map failed\n");
+      exit(1);
+    }
+
+    printf("\nEnter a direction:\n");
+    scanf("%d", &c);
+
+    switch (c) {
+      case UP:
+        move_player(gm, UP);
+        break;
+
+      case DOWN:
+        move_player(gm, DOWN);
+        break;
+
+      case LEFT:
+        move_player(gm, LEFT);
+        break;
+
+      case RIGHT:
+        move_player(gm, RIGHT);
+        break;
+
+      default:
+        printf("\ninvalid direction\n");
+        break;
+    }
   }
 
-  if (free_map(map) == -1) {
-    fprintf(stderr, "free_map failed");
+  if (free_gamemanager(gm) == -1) {
+    fprintf(stderr, "free_gamemanager failed\n");
     exit(1);
   }
 
