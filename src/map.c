@@ -3,51 +3,49 @@
 #include <unistd.h>
 
 typedef struct {
-  int cols;
-  int rows;
+  int rows, cols;
   char **map;
 } Map;
 
-Map *new_map(size_t cols, size_t rows) {
+Map *new_map(int cols, int rows) {
   if (cols <= 0 || rows <= 0) {
-    fprintf(stderr, "new_map: cols and rows must be >= 1\n");
+    fprintf(stderr, "new_map: cols and rows must be >= 1\r\n");
     return NULL;
   }
 
   Map *new_map;
   if ((new_map = malloc(sizeof(Map))) == NULL) {
-    fprintf(stderr, "new_map: failed to allocate memory for struct\n");
+    fprintf(stderr, "new_map: failed to allocate memory for struct\r\n");
     return NULL;
   }
 
   if ((new_map->map = malloc(sizeof(char *) * rows)) == NULL) {
-    fprintf(stderr, "new_map: failed to allocate memory for map rows\n");
+    fprintf(stderr, "new_map: failed to allocate memory for map rows\r\n");
     return NULL;
   }
 
-  for (int i = 0; i < cols; i++) {
-    new_map->map[i] = malloc(sizeof(char) * cols);
-    if (new_map->map[i] == NULL) {
-      fprintf(stderr, "new_map: failed to allocate memory for map columns\n");
+  for (int i = 0; i < rows; i++) {
+    if ((new_map->map[i] = malloc(sizeof(char) * cols)) == NULL) {
+      fprintf(stderr, "new_map: failed to allocate memory for map columns\r\n");
       return NULL;
     }
   }
 
   for (int y = 0; y < rows; y++) {
     for (int x = 0; x < cols; x++) {
-      new_map->map[y][x] = '#';
+      new_map->map[y][x] = ',';
     }
   }
 
-  new_map->cols = cols;
   new_map->rows = rows;
+  new_map->cols = cols;
 
   return new_map;
 }
 
 int free_map(Map *map) {
   if (map == NULL) {
-    fprintf(stderr, "free_map: map is NULL\n");
+    fprintf(stderr, "free_map: map is NULL\r\n");
     return -1;
   }
 

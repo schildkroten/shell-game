@@ -4,12 +4,11 @@
 #include <stdlib.h>
 
 typedef struct {
-  int rows;
-  int cols;
+  int rows, cols;
   char **map;
 } Map;
 
-Map *new_map(size_t cols, size_t rows);
+Map *new_map(int cols, int rows);
 int free_map(Map *map);
 
 #endif

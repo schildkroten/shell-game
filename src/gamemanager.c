@@ -4,6 +4,7 @@
 
 #include "../lib/player.h"
 #include "../lib/map.h"
+#include "../lib/io.h"
 
 typedef enum {
   UP,
@@ -17,29 +18,29 @@ typedef struct {
   Map *map;
 } GameManager;
 
-GameManager *new_gamemanager(size_t map_rows, size_t map_cols) {
+GameManager *new_game_manager(int map_cols, int map_rows) {
   GameManager *new_gm;
   if ((new_gm = malloc(sizeof(GameManager))) == NULL) {
-    fprintf(stderr, "new_gamemanager: failed to allocate memory for struct\n");
+    fprintf(stderr, "new_gamemanager: failed to allocate memory for struct\r\n");
     return NULL;
   }
   
   if ((new_gm->player = new_player()) == NULL) {
-    fprintf(stderr, "new_gamemanager: failed to create player\n");
+    fprintf(stderr, "new_gamemanager: failed to create player\r\n");
     return NULL;
   }
 
-  if ((new_gm->map = new_map(map_rows, map_cols)) == NULL) {
-    fprintf(stderr, "new_gamemanager: failed to create map\n");
+  if ((new_gm->map = new_map(map_cols, map_rows)) == NULL) {
+    fprintf(stderr, "new_gamemanager: failed to create map\r\n");
     return NULL;
   }
 
   return new_gm;
 }
 
-int free_gamemanager(GameManager *gm) {
+int free_game_manager(GameManager *gm) {
   if (gm == NULL) {
-    fprintf(stderr, "free_gamemanager: gamemanager is NULL\n");
+    fprintf(stderr, "free_gamemanager: gamemanager is NULL\r\n");
     return -1;
   }
 
@@ -50,25 +51,25 @@ int free_gamemanager(GameManager *gm) {
   return 0;
 }
 
-int draw_map(GameManager *gm) {
+int draw_map(GameManager *gm, ScreenBuffer *screen_buffer, int start_x, int start_y) {
   if (gm == NULL) {
-    fprintf(stderr, "draw_map: gamemanager is NULL\n");
+    fprintf(stderr, "draw_map: gamemanager is NULL\r\n");
     return -1;
   }
 
-  if (gm->map == NULL) {
-    fprintf(stderr, "draw_map: map is NULL\n");
+  if (screen_buffer == NULL) {
+    fprintf(stderr, "draw_map: buffer is NULL\r\n");
+    return -1;
   }
 
   for (int y = 0; y < gm->map->rows; y++) {
     for (int x = 0; x < gm->map->cols; x++) {
       if (x == gm->player->x && y == gm->player->y) {
-        printf("@ ");
+        screen_buffer->buffer[y + start_y][x + start_x] = '@';
       } else {
-        printf("%c ", gm->map->map[y][x]);
+        screen_buffer->buffer[y + start_y][x + start_x] = gm->map->map[y][x];
       }
     }
-    printf("\n");
   }
 
   return 0;
@@ -76,17 +77,17 @@ int draw_map(GameManager *gm) {
 
 int move_player(GameManager *gm, Direction direction) {
   if (gm == NULL) {
-    fprintf(stderr, "move_player: gamemanager is NULL\n");
+    fprintf(stderr, "move_player: gamemanager is NULL\r\n");
     return -1;
   }
 
   if (gm->player == NULL) {
-    fprintf(stderr, "move_player: player is NULL\n");
+    fprintf(stderr, "move_player: player is NULL\r\n");
     return -1;
   }
 
   if (gm->map == NULL) {
-    fprintf(stderr, "move_player: map is NULL\n");
+    fprintf(stderr, "move_player: map is NULL\r\n");
     return -1;
   }
 
@@ -97,7 +98,7 @@ int move_player(GameManager *gm, Direction direction) {
       break;
 
     case DOWN:
-      if (gm->player->y >= gm->map->rows) break;
+      if (gm->player->y >= gm->map->rows - 1) break;
       gm->player->y++;
       break;
 
@@ -107,12 +108,12 @@ int move_player(GameManager *gm, Direction direction) {
       break;
 
     case RIGHT:
-      if (gm->player->x >= gm->map->rows) break;
+      if (gm->player->x >= gm->map->cols - 1) break;
       gm->player->x++;
       break;
 
     default:
-      fprintf(stderr, "move_player: invalid direction\n");
+      fprintf(stderr, "move_player: invalid direction\r\n");
       return -1;
   }
 

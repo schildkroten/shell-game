@@ -2,9 +2,9 @@ FLAGS = -Wall -g
 
 all: game clean
 
-game: main gamemanager player map
+game: main gamemanager player map io
 	mkdir -p bin
-	gcc main.o gamemanager.o player.o map.o -o bin/game $(FLAGS)
+	gcc main.o gamemanager.o player.o map.o io.o -o bin/game $(FLAGS)
 
 main:
 	gcc main.c -c $(FLAGS)
@@ -18,5 +18,8 @@ player:
 map:
 	gcc src/map.c -c $(FLAGS)
 
+io:
+	gcc src/io.c -c $(FLAGS)
+
 clean:
-	rm -f main.o gamemanager.o player.o map.o
+	rm -f main.o gamemanager.o player.o map.o io.o
