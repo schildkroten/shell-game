@@ -21,14 +21,14 @@ struct termios orig_terminal;
 
 void disable_raw_mode() {
   if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_terminal) == -1) {
-    fprintf(stderr, "disable_raw_mode: %s\r\n", strerror(errno));
+    perror("disable_raw_mode");
     exit(1);
   }
 }
 
 void enable_raw_mode() {
   if (tcgetattr(STDIN_FILENO, &orig_terminal) == -1) {
-    fprintf(stderr, "enable_raw_mode: %s\r\n", strerror(errno));
+    perror("enable_raw_mode");
     exit(1);
   }
 
@@ -45,7 +45,7 @@ void enable_raw_mode() {
   raw_terminal.c_cc[VTIME] = 1;
 
   if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &raw_terminal) == -1) {
-    fprintf(stderr, "enable_raw_mode: %s\r\n", strerror(errno));
+    perror("enable_raw_mode");
     exit(1);
   }
 }
@@ -56,7 +56,7 @@ int get_keypress() {
 
   while ((nread = read(STDIN_FILENO, &c, 1)) != 1) {
     if (nread == -1 && errno != EAGAIN) {
-      fprintf(stderr, "get_keypress: %s\r\n", strerror(errno));
+      perror("get_keypress");
       exit(1);
     }
   }
@@ -112,7 +112,6 @@ typedef struct {
 AppendBuffer *new_append_buffer() {
   AppendBuffer *new_append_buffer;
   if ((new_append_buffer = malloc(sizeof(AppendBuffer))) == NULL) {
-    fprintf(stderr, "new_append_buffer: failed to allocate memory for struct\r\n");
     return NULL;
   }
 
@@ -123,7 +122,7 @@ AppendBuffer *new_append_buffer() {
 
 int free_append_buffer(AppendBuffer *buffer) {
   if (buffer == NULL) {
-    fprintf(stderr, "free_buffer: buffer is NULL\r\n");
+    errno = EINVAL;
     return -1;
   }
 
@@ -135,14 +134,13 @@ int free_append_buffer(AppendBuffer *buffer) {
 
 int append_to_buffer(AppendBuffer *append_buffer, const char *str, int len) {
   if (append_buffer == NULL) {
-    fprintf(stderr, "append_to_buffer: buffer is NULL\r\n");
+    errno = EINVAL;
     return -1;
   }
 
   append_buffer->buffer = realloc(append_buffer->buffer, append_buffer->len + len);
 
   if (append_buffer->buffer == NULL) {
-    fprintf(stderr, "append_to_buffer: realloc failed\r\n");
     return -1;
   }
 
@@ -160,18 +158,15 @@ typedef struct {
 ScreenBuffer *new_screen_buffer(int cols, int rows) {
   ScreenBuffer *new_screen_buffer;
   if ((new_screen_buffer = malloc(sizeof(ScreenBuffer))) == NULL) {
-    fprintf(stderr, "new_screen_buffer: failed to allocate memory for struct\r\n");
     return NULL;
   }
 
   if ((new_screen_buffer->buffer = malloc(sizeof(char *) * rows)) == NULL) {
-    fprintf(stderr, "new_screen_buffer: failed to allocate memory for buffer rows\r\n");
     return NULL;
   }
 
   for (int i = 0; i < rows; i++) {
     if ((new_screen_buffer->buffer[i] = malloc(sizeof(char) * cols)) == NULL) {
-      fprintf(stderr, "new_screen_buffer: failed to allocate memory for buffer columns\r\n");
       return NULL;
     }
   }
@@ -190,7 +185,7 @@ ScreenBuffer *new_screen_buffer(int cols, int rows) {
 
 int free_screen_buffer(ScreenBuffer *screen_buffer) {
   if (screen_buffer == NULL) {
-    fprintf(stderr, "free_screen_buffer: buffer is NULL\r\n");
+    errno = EINVAL;
     return -1;
   }
 
@@ -205,7 +200,7 @@ int free_screen_buffer(ScreenBuffer *screen_buffer) {
 
 int write_screen_buffer(ScreenBuffer *screen_buffer) {
   if (screen_buffer == NULL) {
-    fprintf(stderr, "insert_into_screen_buffer: buffer is null\r\n");
+    errno = EINVAL;
     return -1;
   }
 
@@ -226,6 +221,8 @@ int write_screen_buffer(ScreenBuffer *screen_buffer) {
 typedef struct {
   int width, height;
 
+  int open;
+
   int content_len;
   char *content;
 } Menu;
@@ -233,22 +230,20 @@ typedef struct {
 Menu *new_menu(int width, int height, const char *content, int content_len) {
   Menu *new_menu;
   if ((new_menu = malloc(sizeof(Menu))) == NULL) {
-    fprintf(stderr, "new_menu: failed to allocate memory for struct\r\n");
     return NULL;
   }
 
   if ((new_menu->content = malloc(sizeof(char) * content_len)) == NULL) {
-    fprintf(stderr, "new_menu: failed to allocate memory for menu content\r\n");
     return NULL;
   }
 
   if ((new_menu->content = strdup(content)) == NULL) {
-    fprintf(stderr, "new_menu: failed to set content feild of menu\r\n");
     return NULL;
   }
 
   new_menu->width = width;
   new_menu->height = height;
+  new_menu->open = 0;
   new_menu->content_len = content_len;
 
   return new_menu;
@@ -256,7 +251,7 @@ Menu *new_menu(int width, int height, const char *content, int content_len) {
 
 int free_menu(Menu *menu) {
   if (menu == NULL) {
-    fprintf(stderr, "free_menu: menu is NULL\r\n");
+    errno = EINVAL;
     return -1;
   }
 
@@ -266,15 +261,59 @@ int free_menu(Menu *menu) {
   return 0;
 }
 
-int draw_menu(Menu *menu, ScreenBuffer *buffer, int start_x, int start_y) {
+int draw_menu(Menu *menu, ScreenBuffer *screen_buffer, int start_x, int start_y) {
   if (menu == NULL) {
-    fprintf(stderr, "draw_menu: menu is NULL\r\n");
+    errno = EINVAL;
     return -1;
   }
 
-  if (buffer == NULL) {
-    fprintf(stderr, "draw_menu: buffer is NULL\r\n");
+  if (screen_buffer == NULL) {
+    errno = EINVAL;
     return -1;
+  }
+
+  if (screen_buffer->rows < start_y + menu->height || screen_buffer->cols < start_x + menu->width) {
+    errno = EINVAL;
+    return -1;
+  }
+
+  if (menu->open == 0) {
+    return 0;
+  }
+
+  screen_buffer->buffer[start_y][start_x] = '+';
+  screen_buffer->buffer[start_y][start_x + menu->width - 1] = '+';
+  screen_buffer->buffer[start_y + menu->height - 1][start_x] = '+';
+  screen_buffer->buffer[start_y + menu->height - 1][start_x + menu->width - 1] = '+';
+
+  for (int x = 1; x < menu->width - 1; x++) {
+    screen_buffer->buffer[start_y][x + start_x] = '-';
+    screen_buffer->buffer[start_y + menu->height - 1][x + start_x] = '-';
+  }
+
+  for (int y = 1; y < menu->height - 1; y++) {
+    screen_buffer->buffer[y + start_y][start_x] = '|';
+    screen_buffer->buffer[y + start_y][start_x + menu->width - 1] = '|';
+  }
+
+  int current_char = 0;
+  for (int y = 1; y < menu->height - 1; y++) {
+    for (int x = 2; x < menu->width - 2; x++) {
+      if (menu->content[current_char] == '\n') {
+        screen_buffer->buffer[y + start_y][x + start_x] = ' ';
+      } else {
+        screen_buffer->buffer[y + start_y][x + start_x] = menu->content[current_char];
+
+        if (current_char == menu->content_len - 1) break;
+
+        current_char++;
+      }
+    }
+    if (current_char == menu->content_len - 1) break;
+
+    if (menu->content[current_char] == '\n') {
+      current_char++;
+    }
   }
 
   return 0;

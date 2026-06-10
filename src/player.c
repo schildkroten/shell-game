@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <errno.h>
 
 typedef struct {
   int x, y;
@@ -9,7 +10,6 @@ typedef struct {
 Player *new_player() {
   Player *new_player;
   if ((new_player = malloc(sizeof(Player))) == NULL) {
-    fprintf(stderr, "new_player: failed to allocate memory for struct\r\n");
     return NULL;
   }
 
@@ -21,7 +21,7 @@ Player *new_player() {
 
 int free_player(Player *player) {
   if (player == NULL) {
-    fprintf(stderr, "free_player: player is NULL\r\n");
+    errno = EINVAL;
     return -1;
   }
 

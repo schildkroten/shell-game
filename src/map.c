@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <errno.h>
 
 typedef struct {
   int rows, cols;
@@ -9,24 +10,21 @@ typedef struct {
 
 Map *new_map(int cols, int rows) {
   if (cols <= 0 || rows <= 0) {
-    fprintf(stderr, "new_map: cols and rows must be >= 1\r\n");
+    errno = EINVAL;
     return NULL;
   }
 
   Map *new_map;
   if ((new_map = malloc(sizeof(Map))) == NULL) {
-    fprintf(stderr, "new_map: failed to allocate memory for struct\r\n");
     return NULL;
   }
 
   if ((new_map->map = malloc(sizeof(char *) * rows)) == NULL) {
-    fprintf(stderr, "new_map: failed to allocate memory for map rows\r\n");
     return NULL;
   }
 
   for (int i = 0; i < rows; i++) {
     if ((new_map->map[i] = malloc(sizeof(char) * cols)) == NULL) {
-      fprintf(stderr, "new_map: failed to allocate memory for map columns\r\n");
       return NULL;
     }
   }
@@ -45,7 +43,7 @@ Map *new_map(int cols, int rows) {
 
 int free_map(Map *map) {
   if (map == NULL) {
-    fprintf(stderr, "free_map: map is NULL\r\n");
+    errno = EINVAL;
     return -1;
   }
 

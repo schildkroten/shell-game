@@ -43,6 +43,8 @@ int write_screen_buffer(ScreenBuffer *screen_buffer);
 typedef struct {
   int width, height;
 
+  int open;
+
   int content_len;
   char *content;
 } Menu;
