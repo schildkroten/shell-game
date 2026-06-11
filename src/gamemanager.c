@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <errno.h>
+#include <sys/ioctl.h>
 
 #include "../lib/player.h"
 #include "../lib/map.h"
@@ -17,6 +18,8 @@ typedef enum {
 typedef struct {
   Player *player;
   Map *map;
+
+  int screen_cols, screen_rows;
 } GameManager;
 
 GameManager *new_game_manager(int map_cols, int map_rows) {
@@ -26,6 +29,15 @@ GameManager *new_game_manager(int map_cols, int map_rows) {
   }
   
   if ((new_gm->player = new_player()) == NULL) {
+    return NULL;
+  }
+
+  if (get_window_size(&new_gm->screen_cols, &new_gm->screen_rows) == -1) {
+    return NULL;
+  }
+ 
+  if (new_gm->screen_cols < map_cols || new_gm->screen_rows < map_rows) {
+    errno = EINVAL;
     return NULL;
   }
 

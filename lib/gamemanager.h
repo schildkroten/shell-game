@@ -15,6 +15,8 @@ typedef enum {
 typedef struct {
   Player *player;
   Map *map;
+
+  int screen_cols, screen_rows;
 } GameManager;
 
 GameManager *new_game_manager(int rows, int cols);

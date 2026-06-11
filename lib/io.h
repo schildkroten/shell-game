@@ -54,4 +54,6 @@ int free_menu(Menu *menu);
 
 int draw_menu(Menu *menu, ScreenBuffer *screen_buffer, int start_x, int start_y);
 
+int get_window_size(int *cols, int *rows);
+
 #endif

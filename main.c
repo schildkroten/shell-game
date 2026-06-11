@@ -41,7 +41,7 @@ int main(int argc, char **argv) {
   int slen;
   while (1) {
     ScreenBuffer *screen_buffer;
-    if ((screen_buffer = new_screen_buffer(85, 21)) == NULL) {
+    if ((screen_buffer = new_screen_buffer(gm->screen_cols, gm->screen_rows)) == NULL) {
       free_game_manager(gm);
       die("new_screen_buffer");
     }

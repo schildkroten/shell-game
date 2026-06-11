@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
+#include <sys/ioctl.h>
 
 enum Keys {
   ARROW_UP = 1000,
@@ -208,7 +209,10 @@ int write_screen_buffer(ScreenBuffer *screen_buffer) {
 
   for (int i = 0; i < screen_buffer->rows; i++) {
     append_to_buffer(append_buffer, screen_buffer->buffer[i], screen_buffer->cols);
-    append_to_buffer(append_buffer, "\r\n", 2);
+    
+    if (i < screen_buffer->rows - 1) {
+      append_to_buffer(append_buffer, "\r\n", 2);
+    }
   }
 
   write(STDOUT_FILENO, append_buffer->buffer, append_buffer->len);
@@ -315,6 +319,18 @@ int draw_menu(Menu *menu, ScreenBuffer *screen_buffer, int start_x, int start_y)
       current_char++;
     }
   }
+
+  return 0;
+}
+
+int get_window_size(int *cols, int *rows) {
+  struct winsize ws;
+  if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0) {
+    return -1;
+  }
+
+  *cols = ws.ws_col;
+  *rows = ws.ws_row;
 
   return 0;
 }
