@@ -4,7 +4,7 @@
 #include "engine.h"
 
 typedef struct {
-  int x, y;
+  unsigned int x, y;
 } Player;
 
 typedef struct {
@@ -21,7 +21,7 @@ typedef struct {
   Map map;
 } GameManager;
 
-int init_game_manager(GameManager *gm, size_t map_width, size_t map_height);
+int init_game_manager(GameManager *gm);
 
 int draw_map(GameManager gm, FrameBuffer *frame_buffer, int start_x, int start_y);
 

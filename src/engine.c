@@ -22,7 +22,7 @@ int track_object(ObjectTracker **tracker, void *object_ptr) {
     return -1;
   }
 
-  struct Object *new_object = malloc(sizeof(struct Object));
+  struct Object *new_object = (struct Object *)malloc(sizeof(struct Object));
   if (new_object == NULL) { return -1; }
 
   new_object->ptr = object_ptr;
@@ -186,7 +186,7 @@ int append_to_buffer(AppendBuffer *append_buffer, char *str, size_t str_len) {
     return -1;
   }
 
-  char *new_buffer = realloc(append_buffer->buffer, append_buffer->len + str_len);
+  char *new_buffer = (char *)realloc(append_buffer->buffer, append_buffer->len + str_len);
   if (new_buffer == NULL) { return -1; }
 
   memcpy(&new_buffer[append_buffer->len], str, str_len);
@@ -218,7 +218,7 @@ int init_frame_buffer(FrameBuffer *frame_buffer, size_t frame_width, size_t fram
     return -1;
   }
 
-  frame_buffer->buffer = malloc(frame_width * frame_height * sizeof(char));
+  frame_buffer->buffer = (char *)malloc(frame_width * frame_height * sizeof(char));
 
   if (frame_buffer->buffer == NULL) { return -1; }
 
@@ -264,7 +264,7 @@ int write_frame_buffer(FrameBuffer frame_buffer) {
 
   AppendBuffer append_buffer = INIT_APPEND_BUFFER;
 
-  for (int row = 0; row < frame_buffer.height; row++) {
+  for (unsigned int row = 0; row < frame_buffer.height; row++) {
     if (append_to_buffer(&append_buffer, &frame_buffer.buffer[row * frame_buffer.width], frame_buffer.width) == -1) {
       return -1;
     }

@@ -6,9 +6,6 @@
 #include "lib/engine.h"
 #include "lib/gamelib.h"
 
-#define MAP_WIDTH 20
-#define MAP_HEIGHT 10
-
 ObjectTracker *tracker = NULL;
 
 void cleanup() {
@@ -31,7 +28,7 @@ int main() {
   atexit(cleanup);
 
   GameManager gm = GAME_MANAGER_BASE;
-  if (init_game_manager(&gm, MAP_WIDTH, MAP_HEIGHT) == -1) {
+  if (init_game_manager(&gm) == -1) {
     die("init_game_manager");
   }
 

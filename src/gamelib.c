@@ -4,7 +4,7 @@
 #include "../lib/engine.h"
 
 typedef struct {
-  int x, y;
+  unsigned int x, y;
 } Player;
 
 typedef struct {
@@ -19,13 +19,8 @@ typedef struct {
   Map map;
 } GameManager;
 
-int init_game_manager(GameManager *gm, size_t map_width, size_t map_height) {
+int init_game_manager(GameManager *gm) {
   if (gm == NULL) {
-    errno = EINVAL;
-    return -1;
-  }
-
-  if (map_width < 1 || map_height < 1) {
     errno = EINVAL;
     return -1;
   }
@@ -35,16 +30,17 @@ int init_game_manager(GameManager *gm, size_t map_width, size_t map_height) {
     return -1;
   }
 
-  gm->map.map = malloc(map_width * map_height * sizeof(char));
+  if (get_window_size(&gm->win_width, &gm->win_height) == -1) { return -1; }
+
+  gm->map.width = gm->win_width * 2/3;
+  gm->map.height = gm->win_height * 2/3;
+  gm->map.map = malloc(gm->map.width * gm->map.height * sizeof(char));
 
   if (gm->map.map == NULL) { return -1; }
 
-  memset(gm->map.map, ',', map_width * map_height * sizeof(char));
+  memset(gm->map.map, ',', gm->map.width * gm->map.height * sizeof(char));
 
-  gm->map.width = map_width;
-  gm->map.height = map_height;
 
-  if (get_window_size(&gm->win_width, &gm->win_height) == -1) { return -1; }
 
   return 0;
 }
