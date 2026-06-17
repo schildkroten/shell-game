@@ -15,8 +15,6 @@ void cleanup() {
 }
 
 void die(const char *s) {
-  reset_screen();
-  free_tracked_objects(&tracker);
   perror(s);
   exit(1);
 }
@@ -35,14 +33,13 @@ int main() {
   if (track_object(&tracker, gm.map.map) == -1) { die("track_object"); }
 
   while (1) {
-    reset_screen();
-
-    write(STDOUT_FILENO, "\x1b[?25l", 6);
-
     FrameBuffer frame_buffer = FRAME_BUFFER_BASE;
     if (init_frame_buffer(&frame_buffer, gm.win_width, gm.win_height) == -1) {
       die("init_frame_buffer");
     }
+
+    write(STDOUT_FILENO, "\x1b[?25l", 6);
+    write(STDOUT_FILENO, "\x1b[H", 3);
 
     if (draw_map(gm, &frame_buffer, 0, 0) == -1) { die("draw_map"); }
 

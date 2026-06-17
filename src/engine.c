@@ -297,6 +297,8 @@ int write_frame_buffer(FrameBuffer frame_buffer) {
       return -1;
     }
 
+    if (append_to_buffer(&append_buffer, "\x1b[K", 3) == -1) { return -1; }
+
     if (row == frame_buffer.height - 1) { continue; }
 
     if (append_to_buffer(&append_buffer, "\r\n", 2) == -1) { return -1; }

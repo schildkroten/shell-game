@@ -33,6 +33,11 @@ int init_game_manager(GameManager *gm) {
 
   if (get_window_size(&gm->win_width, &gm->win_height) == -1) { return -1; }
 
+  if (gm->win_width < 80 || gm->win_height < 24) {
+    errno = ENOMSG;
+    return -1;
+  }
+
   gm->map.width = gm->win_width * 2/3;
   gm->map.height = gm->win_height * 2/3;
   gm->map.map = malloc(gm->map.width * gm->map.height * sizeof(char));
