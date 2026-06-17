@@ -23,9 +23,7 @@ int track_object(ObjectTracker **tracker, void *object_ptr) {
   }
 
   struct Object *new_object = malloc(sizeof(struct Object));
-  if (new_object == NULL) {
-    return -1;
-  }
+  if (new_object == NULL) { return -1; }
 
   new_object->ptr = object_ptr;
 
@@ -42,9 +40,7 @@ int track_object(ObjectTracker **tracker, void *object_ptr) {
 }
 
 int free_tracked_objects(ObjectTracker **tracker) {
-  if (tracker == NULL) {
-    return 0;
-  }
+  if (tracker == NULL) { return 0; }
 
   struct Object *next_object = *tracker;
   struct Object *tmp;
@@ -111,9 +107,7 @@ int get_keypress() {
   char c;
 
   while ((nread = read(STDIN_FILENO, &c, 1)) != 1) {
-    if (nread == -1 && errno != EAGAIN) {
-      return -1;
-    }
+    if (nread == -1 && errno != EAGAIN) { return -1; }
   }
 
   if (c == '\x1b') {
@@ -161,9 +155,7 @@ int get_keypress() {
 
 int get_window_size(size_t *cols_res, size_t *rows_res) {
   struct winsize ws;
-  if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0) {
-    return -1;
-  }
+  if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0) { return -1; }
 
   *cols_res = ws.ws_col;
   *rows_res = ws.ws_row;
@@ -195,9 +187,7 @@ int append_to_buffer(AppendBuffer *append_buffer, char *str, size_t str_len) {
   }
 
   char *new_buffer = realloc(append_buffer->buffer, append_buffer->len + str_len);
-  if (new_buffer == NULL) {
-    return -1;
-  }
+  if (new_buffer == NULL) { return -1; }
 
   memcpy(&new_buffer[append_buffer->len], str, str_len);
 
@@ -230,9 +220,7 @@ int init_frame_buffer(FrameBuffer *frame_buffer, size_t frame_width, size_t fram
 
   frame_buffer->buffer = malloc(frame_width * frame_height * sizeof(char));
 
-  if (frame_buffer->buffer == NULL) {
-    return -1;
-  }
+  if (frame_buffer->buffer == NULL) { return -1; }
 
   memset(frame_buffer->buffer, ' ', frame_width * frame_height * sizeof(char));
 
@@ -281,16 +269,14 @@ int write_frame_buffer(FrameBuffer frame_buffer) {
       return -1;
     }
 
-    if (row == frame_buffer.height - 1) {
-      continue;
-    }
+    if (row == frame_buffer.height - 1) { continue; }
 
-    if (append_to_buffer(&append_buffer, "\r\n", 2) == -1) {
-      return -1;
-    }
+    if (append_to_buffer(&append_buffer, "\r\n", 2) == -1) { return -1; }
   }
 
   write(STDOUT_FILENO, append_buffer.buffer, append_buffer.len);
+
+  free(append_buffer.buffer);
 
   return 0;
 }

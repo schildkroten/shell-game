@@ -37,18 +37,14 @@ int init_game_manager(GameManager *gm, size_t map_width, size_t map_height) {
 
   gm->map.map = malloc(map_width * map_height * sizeof(char));
 
-  if (gm->map.map == NULL) {
-    return -1;
-  }
+  if (gm->map.map == NULL) { return -1; }
 
   memset(gm->map.map, ',', map_width * map_height * sizeof(char));
 
   gm->map.width = map_width;
   gm->map.height = map_height;
 
-  if (get_window_size(&gm->win_width, &gm->win_height) == -1) {
-    return -1;
-  }
+  if (get_window_size(&gm->win_width, &gm->win_height) == -1) { return -1; }
 
   return 0;
 }
@@ -62,9 +58,13 @@ int draw_map(GameManager gm, FrameBuffer *frame_buffer) {
   for (size_t y = 0; y < gm.map.height; y++) {
     for (size_t x = 0; x < gm.map.width; x++) {
       if (x == gm.player.x && y == gm.player.y) {
-        insert_into_frame(frame_buffer, '@', x, y);
+        if (insert_into_frame(frame_buffer, '@', x, y) == -1) {
+          return -1;
+        }
       } else {
-        insert_into_frame(frame_buffer, gm.map.map[y * gm.map.width + x], x, y);
+        if (insert_into_frame(frame_buffer, gm.map.map[y * gm.map.width + x], x, y) == -1) {
+          return -1;
+        }
       }
     }
   }
@@ -80,21 +80,26 @@ typedef enum {
 } Direction;
 
 int move_player(GameManager *gm, Direction direction) {
+  if (gm == NULL) {
+    errno = EINVAL;
+    return -1;
+  }
+
   switch (direction) {
     case UP:
-      gm->player.y--;
+      if (gm->player.y > 0) { gm->player.y--; }
       break;
 
     case DOWN:
-      gm->player.y++;
+      if (gm->player.y < gm->map.height - 1) { gm->player.y++; }
       break;
 
     case LEFT:
-      gm->player.x--;
+      if (gm->player.x > 0) { gm->player.x--; }
       break;
 
     case RIGHT:
-      gm->player.x++;
+      if (gm->player.x < gm->map.width - 1) { gm->player.x++; }
       break;
 
     default:

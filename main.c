@@ -19,6 +19,7 @@ void cleanup() {
 
 void die(const char *s) {
   reset_screen();
+  free_tracked_objects(&tracker);
   perror(s);
   exit(1);
 }
@@ -34,9 +35,7 @@ int main() {
     die("init_game_manager");
   }
 
-  if (track_object(&tracker, gm.map.map) == -1) {
-    die("track_object");
-  }
+  if (track_object(&tracker, gm.map.map) == -1) { die("track_object"); }
 
   while (1) {
     reset_screen();
@@ -46,11 +45,10 @@ int main() {
       die("init_frame_buffer");
     }
 
-    if (draw_map(gm, &frame_buffer, 0, 0) == -1) {
-      die("draw_map");
-    }
+    if (draw_map(gm, &frame_buffer, 0, 0) == -1) { die("draw_map"); }
 
-    write_frame_buffer(frame_buffer);
+    if (write_frame_buffer(frame_buffer) == -1) { die("write_frame_buffer"); }
+
     write(STDOUT_FILENO, "\x1b[H", 3);
 
     int key = get_keypress();
@@ -61,19 +59,19 @@ int main() {
 
     switch (key) {
       case ARROW_UP:
-        move_player(&gm, UP);
+        if (move_player(&gm, UP) == -1) { die("move_player"); }
         break;
 
       case ARROW_DOWN:
-        move_player(&gm, DOWN);
+        if (move_player(&gm, DOWN) == -1) { die("move_player"); }
         break;
 
       case ARROW_LEFT:
-        move_player(&gm, LEFT);
+        if (move_player(&gm, LEFT) == -1) { die("move_player"); }
         break;
 
       case ARROW_RIGHT:
-        move_player(&gm, RIGHT);
+        if (move_player(&gm, RIGHT) == -1) { die("move_player"); }
         break;
 
       case CTRL_KEY('q'):
