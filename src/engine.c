@@ -163,6 +163,34 @@ int get_window_size(size_t *cols_res, size_t *rows_res) {
   return 0;
 }
 
+int get_cursor_pos(unsigned int *x_res, unsigned int *y_res) {
+  char buffer[32];
+
+  if (write(STDOUT_FILENO, "\x1b[6n", 4) != 4) { return -1; }
+
+  unsigned int i = 0;
+  for (i = 0; i < sizeof(buffer) - 1; i++) {
+    if (read(STDIN_FILENO, &buffer[i], 1) != 1) { break; }
+    if (buffer[i] == 'R')  { break; }
+  }
+
+  buffer[i] = '\0';
+
+  if (buffer[0] != '\x1b' || buffer[1] != '[') { return -1; }
+
+  if (sscanf(&buffer[2], "%d;%d", y_res, x_res) != 2) { return -1; }
+
+  return 0;
+}
+
+int move_cursor_to(unsigned int x, unsigned int y) {
+  char buffer[32];
+  snprintf(buffer, sizeof(buffer), "\x1b[%d;%dH", y + 1, x + 1);
+  write(STDOUT_FILENO, buffer, strlen(buffer));
+
+  return 0;
+}
+
 void reset_screen() {
   write(STDOUT_FILENO, "\x1b[2J", 4);
   write(STDOUT_FILENO, "\x1b[H", 3);

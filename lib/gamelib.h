@@ -12,10 +12,11 @@ typedef struct {
   char *map;
 } Map;
 
-#define GAME_MANAGER_BASE {0, 0, {0, 0}, {0, 0, NULL}}
+#define GAME_MANAGER_BASE {0, 0, 0, 0, {0, 0}, {0, 0, NULL}}
 
 typedef struct {
   size_t win_width, win_height;
+  unsigned int cursor_x, cursor_y;
 
   Player player;
   Map map;

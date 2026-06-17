@@ -14,6 +14,7 @@ typedef struct {
 
 typedef struct {
   size_t win_width, win_height;
+  unsigned int cursor_x, cursor_y;
 
   Player player;
   Map map;
@@ -40,7 +41,7 @@ int init_game_manager(GameManager *gm) {
 
   memset(gm->map.map, ',', gm->map.width * gm->map.height * sizeof(char));
 
-
+  if (get_cursor_pos(&gm->cursor_x, &gm->cursor_y) == -1) { return -1; }
 
   return 0;
 }

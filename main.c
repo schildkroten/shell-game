@@ -37,6 +37,8 @@ int main() {
   while (1) {
     reset_screen();
 
+    write(STDOUT_FILENO, "\x1b[?25l", 6);
+
     FrameBuffer frame_buffer = FRAME_BUFFER_BASE;
     if (init_frame_buffer(&frame_buffer, gm.win_width, gm.win_height) == -1) {
       die("init_frame_buffer");
@@ -46,7 +48,11 @@ int main() {
 
     if (write_frame_buffer(frame_buffer) == -1) { die("write_frame_buffer"); }
 
-    write(STDOUT_FILENO, "\x1b[H", 3);
+    move_cursor_to(gm.player.x, gm.player.y);
+    gm.cursor_x = gm.player.x;
+    gm.cursor_y = gm.player.y;
+
+    write(STDOUT_FILENO, "\x1b[?25h", 6);
 
     int key = get_keypress();
 
