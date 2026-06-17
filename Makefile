@@ -1,25 +1,19 @@
-FLAGS = -Wall -g
+FLAGS = -Wall -Wextra -fsanitize=address -g
 
 all: game clean
 
-game: main gamemanager player map io
+game: main engine gamelib
 	mkdir -p bin
-	gcc main.o gamemanager.o player.o map.o io.o -o bin/game $(FLAGS)
+	gcc main.o engine.o gamelib.o -o bin/game $(FLAGS)
 
 main:
 	gcc main.c -c $(FLAGS)
 
-gamemanager:
-	gcc src/gamemanager.c -c $(FLAGS)
+engine:
+	gcc src/engine.c -c $(FLAGS)
 
-player:
-	gcc src/player.c -c $(FLAGS)
-
-map:
-	gcc src/map.c -c $(FLAGS)
-
-io:
-	gcc src/io.c -c $(FLAGS)
+gamelib:
+	gcc src/gamelib.c -c $(FLAGS)
 
 clean:
-	rm -f main.o gamemanager.o player.o map.o io.o
+	rm -f main.o engine.o gamelib.o

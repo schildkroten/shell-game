@@ -3,15 +3,18 @@
 #include <unistd.h>
 #include <string.h>
 
-#include "lib/gamemanager.h"
-#include "lib/io.h"
+#include "lib/engine.h"
+#include "lib/gamelib.h"
 
 #define MAP_WIDTH 20
 #define MAP_HEIGHT 10
 
-void reset_screen() {
-  write(STDOUT_FILENO, "\x1b[2J", 4);
-  write(STDOUT_FILENO, "\x1b[H", 3);
+ObjectTracker *tracker = NULL;
+
+void cleanup() {
+  disable_raw_mode();
+  reset_screen();
+  free_tracked_objects(&tracker);
 }
 
 void die(const char *s) {
@@ -20,102 +23,67 @@ void die(const char *s) {
   exit(1);
 }
 
-int main(int argc, char **argv) {
+int main() {
   enable_raw_mode();
-
-  GameManager *gm;
-  if ((gm = new_game_manager(MAP_WIDTH, MAP_HEIGHT)) == NULL) {
-    die("new_game_manager");
-  }
-
-  char *content = "Inventory\nstone: 10\nwood: 15\nmeat: 3";
-  Menu *menu;
-  if ((menu = new_menu(MAP_WIDTH, MAP_HEIGHT, content, strlen(content))) == NULL) {
-    free_game_manager(gm);
-    die("new_menu");
-  }
-
   reset_screen();
 
-  char s[32];
-  int slen;
+  atexit(cleanup);
+
+  GameManager gm = GAME_MANAGER_BASE;
+  if (init_game_manager(&gm, MAP_WIDTH, MAP_HEIGHT) == -1) {
+    die("init_game_manager");
+  }
+
+  if (track_object(&tracker, gm.map.map) == -1) {
+    die("track_object");
+  }
+
   while (1) {
-    ScreenBuffer *screen_buffer;
-    if ((screen_buffer = new_screen_buffer(gm->screen_cols, gm->screen_rows)) == NULL) {
-      free_game_manager(gm);
-      die("new_screen_buffer");
-    }
-
-    write(STDOUT_FILENO, "\x1b[?25l", 6);
-
     reset_screen();
 
-    if (draw_map(gm, screen_buffer, 0, 0) == -1) {
-      free_game_manager(gm);
-      free_screen_buffer(screen_buffer);
+    FrameBuffer frame_buffer = FRAME_BUFFER_BASE;
+    if (init_frame_buffer(&frame_buffer, 80, 40) == -1) {
+      die("init_frame_buffer");
+    }
+
+    if (draw_map(gm, &frame_buffer, 0, 0) == -1) {
       die("draw_map");
     }
 
-    if (draw_menu(menu, screen_buffer, MAP_WIDTH, 0) == -1) {
-      free_game_manager(gm);
-      free_screen_buffer(screen_buffer);
-      die("draw_menu");
+    write_frame_buffer(frame_buffer);
+    write(STDOUT_FILENO, "\x1b[H", 3);
+
+    int key = get_keypress();
+
+    if (key == -1) {
+      die("get_keypress");
     }
 
-    if (write_screen_buffer(screen_buffer) == -1) {
-      free_game_manager(gm);
-      free_screen_buffer(screen_buffer);
-      die("write_screen_buffer"); 
-    }
-
-    slen = snprintf(s, 32, "\x1b[%d;%dH", gm->player->y + 1, gm->player->x + 1);
-    write(STDOUT_FILENO, s, slen);
-
-    write(STDOUT_FILENO, "\x1b[?25h", 6);
-
-    if (free_screen_buffer(screen_buffer) == -1) {
-      free_game_manager(gm);
-      die("free_screen_buffer");
-    }
-
-    switch (get_keypress()) {
-      case ARROW_LEFT:
-      case 'h':
-        move_player(gm, LEFT);
+    switch (key) {
+      case ARROW_UP:
+        move_player(&gm, UP);
         break;
 
       case ARROW_DOWN:
-      case 'j':
-        move_player(gm, DOWN);
+        move_player(&gm, DOWN);
         break;
 
-      case ARROW_UP:
-      case 'k':
-        move_player(gm, UP);
+      case ARROW_LEFT:
+        move_player(&gm, LEFT);
         break;
 
       case ARROW_RIGHT:
-      case 'l':
-        move_player(gm, RIGHT);
-        break;
-
-      case 'e':
-        if (menu->open == 0) {
-          menu->open = 1;
-        } else {
-          menu->open = 0;
-        }
-
+        move_player(&gm, RIGHT);
         break;
 
       case CTRL_KEY('q'):
-        reset_screen();
-        free_game_manager(gm);
         exit(0);
 
       default:
         break;
     }
+
+    free(frame_buffer.buffer);
   }
 
   return 0;
