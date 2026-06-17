@@ -37,7 +37,7 @@ void reset_screen();
 #define INIT_APPEND_BUFFER {0, NULL}
 
 typedef struct {
-  int len;
+  size_t len;
   char *buffer;
 } AppendBuffer;
 
@@ -46,11 +46,11 @@ int append_to_buffer(AppendBuffer *append_buffer, char *str, size_t str_len);
 #define FRAME_BUFFER_BASE {0, 0, NULL}
 
 typedef struct {
-  int width, height;
+  size_t width, height;
   char *buffer;
 } FrameBuffer;
 
-int init_frame_buffer(FrameBuffer *frame_buffer, int frame_width, int frame_height);
+int init_frame_buffer(FrameBuffer *frame_buffer, size_t frame_width, size_t frame_height);
 int insert_into_frame(FrameBuffer *frame_buffer, char ch, int x, int y);
 int write_frame_buffer(FrameBuffer frame_buffer);
 

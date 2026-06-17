@@ -208,11 +208,11 @@ int append_to_buffer(AppendBuffer *append_buffer, char *str, size_t str_len) {
 }
 
 typedef struct {
-  int width, height;
+  size_t width, height;
   char *buffer;
 } FrameBuffer;
 
-int init_frame_buffer(FrameBuffer *frame_buffer, int frame_width, int frame_height) {
+int init_frame_buffer(FrameBuffer *frame_buffer, size_t frame_width, size_t frame_height) {
   if (frame_buffer == NULL) {
     errno = EINVAL;
     return -1;
@@ -234,7 +234,7 @@ int init_frame_buffer(FrameBuffer *frame_buffer, int frame_width, int frame_heig
     return -1;
   }
 
-  memset(frame_buffer->buffer, '#', frame_width * frame_height * sizeof(char));
+  memset(frame_buffer->buffer, ' ', frame_width * frame_height * sizeof(char));
 
   frame_buffer->width = frame_width;
   frame_buffer->height = frame_height;
@@ -276,9 +276,13 @@ int write_frame_buffer(FrameBuffer frame_buffer) {
 
   AppendBuffer append_buffer = INIT_APPEND_BUFFER;
 
-  for (int i = 0; i < frame_buffer.width * frame_buffer.height; i += frame_buffer.width) {
-    if (append_to_buffer(&append_buffer, &frame_buffer.buffer[i], frame_buffer.width) == -1) {
+  for (int row = 0; row < frame_buffer.height; row++) {
+    if (append_to_buffer(&append_buffer, &frame_buffer.buffer[row * frame_buffer.width], frame_buffer.width) == -1) {
       return -1;
+    }
+
+    if (row == frame_buffer.height - 1) {
+      continue;
     }
 
     if (append_to_buffer(&append_buffer, "\r\n", 2) == -1) {

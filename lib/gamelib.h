@@ -8,18 +8,20 @@ typedef struct {
 } Player;
 
 typedef struct {
-  int width, height;
+  size_t width, height;
   char *map;
 } Map;
 
-#define GAME_MANAGER_BASE {{0, 0}, {0, 0, NULL}}
+#define GAME_MANAGER_BASE {0, 0, {0, 0}, {0, 0, NULL}}
 
 typedef struct {
+  size_t win_width, win_height;
+
   Player player;
   Map map;
 } GameManager;
 
-int init_game_manager(GameManager *gm, int map_width, int map_height);
+int init_game_manager(GameManager *gm, size_t map_width, size_t map_height);
 
 int draw_map(GameManager gm, FrameBuffer *frame_buffer, int start_x, int start_y);
 

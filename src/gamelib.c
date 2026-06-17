@@ -8,16 +8,18 @@ typedef struct {
 } Player;
 
 typedef struct {
-  int width, height;
+  size_t width, height;
   char *map;
 } Map;
 
 typedef struct {
+  size_t win_width, win_height;
+
   Player player;
   Map map;
 } GameManager;
 
-int init_game_manager(GameManager *gm, int map_width, int map_height) {
+int init_game_manager(GameManager *gm, size_t map_width, size_t map_height) {
   if (gm == NULL) {
     errno = EINVAL;
     return -1;
@@ -44,6 +46,10 @@ int init_game_manager(GameManager *gm, int map_width, int map_height) {
   gm->map.width = map_width;
   gm->map.height = map_height;
 
+  if (get_window_size(&gm->win_width, &gm->win_height) == -1) {
+    return -1;
+  }
+
   return 0;
 }
 
@@ -53,8 +59,8 @@ int draw_map(GameManager gm, FrameBuffer *frame_buffer) {
     return -1;
   }
 
-  for (int y = 0; y < gm.map.height; y++) {
-    for (int x = 0; x < gm.map.width; x++) {
+  for (size_t y = 0; y < gm.map.height; y++) {
+    for (size_t x = 0; x < gm.map.width; x++) {
       if (x == gm.player.x && y == gm.player.y) {
         insert_into_frame(frame_buffer, '@', x, y);
       } else {

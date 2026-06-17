@@ -42,7 +42,7 @@ int main() {
     reset_screen();
 
     FrameBuffer frame_buffer = FRAME_BUFFER_BASE;
-    if (init_frame_buffer(&frame_buffer, 80, 40) == -1) {
+    if (init_frame_buffer(&frame_buffer, gm.win_width, gm.win_height) == -1) {
       die("init_frame_buffer");
     }
 
@@ -77,6 +77,7 @@ int main() {
         break;
 
       case CTRL_KEY('q'):
+        free(frame_buffer.buffer);
         exit(0);
 
       default:
