@@ -26,11 +26,15 @@ int main() {
   atexit(cleanup);
 
   GameManager gm = GAME_MANAGER_BASE;
-  if (init_game_manager(&gm) == -1) {
-    die("init_game_manager");
+  if (init_game_manager(&gm) == -1) { die("init_game_manager"); }
+  if (track_object(&tracker, gm.map.map) == -1) { die("track_object"); }
+
+  Menu inventory = MENU_BASE;
+  if (init_menu(&inventory, gm.win_width - gm.map.width - 1, gm.win_height, "Inventory", 9) == -1) {
+    die("init_menu");
   }
 
-  if (track_object(&tracker, gm.map.map) == -1) { die("track_object"); }
+  if (track_object(&tracker, inventory.content) == -1) { die("track_object"); }
 
   while (1) {
     FrameBuffer frame_buffer = FRAME_BUFFER_BASE;
@@ -41,9 +45,12 @@ int main() {
     write(STDOUT_FILENO, "\x1b[?25l", 6);
     write(STDOUT_FILENO, "\x1b[H", 3);
 
-    if (draw_map(gm, &frame_buffer, 0, 0) == -1) { die("draw_map"); }
+    if (draw_map(gm, 0, 0, &frame_buffer) == -1) { die("draw_map"); }
+    if (draw_menu(inventory, gm.map.width, 0, &frame_buffer) == -1) { die("draw_menu"); }
 
     if (write_frame_buffer(frame_buffer) == -1) { die("write_frame_buffer"); }
+
+    free(frame_buffer.buffer);
 
     move_cursor_to(gm.player.x, gm.player.y);
     gm.cursor_x = gm.player.x;
@@ -52,10 +59,7 @@ int main() {
     write(STDOUT_FILENO, "\x1b[?25h", 6);
 
     int key = get_keypress();
-
-    if (key == -1) {
-      die("get_keypress");
-    }
+    if (key == -1) { die("get_keypress"); }
 
     switch (key) {
       case ARROW_UP:
@@ -75,14 +79,11 @@ int main() {
         break;
 
       case CTRL_KEY('q'):
-        free(frame_buffer.buffer);
         exit(0);
 
       default:
         break;
     }
-
-    free(frame_buffer.buffer);
   }
 
   return 0;

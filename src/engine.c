@@ -39,16 +39,46 @@ int track_object(ObjectTracker **tracker, void *object_ptr) {
   return 0;
 }
 
+int untrack_object(ObjectTracker **tracker, void *object_ptr) {
+  if (tracker == NULL) {
+    errno = EINVAL;
+    return -1;
+  }
+
+  if (*tracker == NULL) { return 0; }
+
+  struct Object *current = *tracker;
+
+  if (current->ptr == object_ptr) {
+    *tracker = current->next;
+    free(current);
+    return 0;
+  }
+
+  struct Object *prev = NULL;
+  while (current != NULL && current->ptr != object_ptr) {
+    prev = current;
+    current = current->next;
+  }
+
+  if (current == NULL) { return 0; }
+
+  prev->next = current->next;
+  free(current);
+
+  return 0;
+}
+
 int free_tracked_objects(ObjectTracker **tracker) {
   if (tracker == NULL) { return 0; }
 
-  struct Object *next_object = *tracker;
+  struct Object *object = *tracker;
   struct Object *tmp;
-  while (next_object != NULL) {
-    printf("freeing object %p\r\n", next_object->ptr);
+  while (object != NULL) {
+    printf("freeing object %p\r\n", object->ptr);
 
-    tmp = next_object;
-    next_object = next_object->next;
+    tmp = object;
+    object = object->next;
 
     free(tmp->ptr);
     free(tmp);
@@ -258,27 +288,6 @@ int init_frame_buffer(FrameBuffer *frame_buffer, size_t frame_width, size_t fram
   return 0;
 }
 
-int insert_into_frame(FrameBuffer *frame_buffer, char ch, int x, int y) {
-  if (frame_buffer == NULL) {
-    errno = EINVAL;
-    return -1;
-  }
-
-  if (frame_buffer->buffer == NULL) {
-    errno = EINVAL;
-    return -1;
-  }
-
-  if (x < 0 || y < 0) {
-    errno = EINVAL;
-    return -1;
-  }
-
-  frame_buffer->buffer[y * frame_buffer->width + x] = ch;
-
-  return 0;
-}
-
 int write_frame_buffer(FrameBuffer frame_buffer) {
   if (frame_buffer.buffer == NULL) {
     errno = EINVAL;
@@ -307,6 +316,92 @@ int write_frame_buffer(FrameBuffer frame_buffer) {
   write(STDOUT_FILENO, append_buffer.buffer, append_buffer.len);
 
   free(append_buffer.buffer);
+
+  return 0;
+}
+
+typedef struct {
+  size_t width, height;
+
+  size_t content_len;
+  char *content;
+} Menu;
+
+int init_menu(Menu *menu, size_t menu_width, size_t menu_height, const char *content, size_t content_len) {
+  if (menu == NULL) {
+    errno = EINVAL;
+    return -1;
+  }
+
+  if (content == NULL) {
+    errno = EINVAL;
+    return -1;
+  }
+
+  if (menu_width < 1 || menu_height < 1) {
+    errno = EINVAL;
+    return -1;
+  }
+
+  if (content_len < 1) {
+    errno = EINVAL;
+    return -1;
+  }
+
+  menu->width = menu_width;
+  menu->height = menu_height;
+
+  menu->content_len = content_len;
+  menu->content = (char *)malloc(content_len * sizeof(char));
+
+  if (menu->content == NULL) { return -1; }
+
+  memcpy(menu->content, content, menu->content_len);
+
+  return 0;
+}
+
+int draw_menu(Menu menu, unsigned int start_x, unsigned int start_y, FrameBuffer *frame_buffer) {
+  if (frame_buffer == NULL) {
+    errno = EINVAL;
+    return -1;
+  }
+
+  frame_buffer->buffer[start_y * frame_buffer->width + start_x] = '+';
+  frame_buffer->buffer[start_y * frame_buffer->width + start_x + menu.width - 1] = '+';
+  frame_buffer->buffer[(start_y + menu.height - 1) * frame_buffer->width + start_x] = '+';
+  frame_buffer->buffer[(start_y + menu.height - 1) * frame_buffer->width + start_x + menu.width - 1] = '+';
+
+  for (unsigned int y = start_y + 1; y < menu.height + start_y - 1; y++) {
+    frame_buffer->buffer[y * frame_buffer->width + start_x] = '|';
+    frame_buffer->buffer[y * frame_buffer->width + start_x + menu.width - 1] = '|';
+  }
+
+  for (unsigned int x = start_x + 1; x < menu.width + start_x - 1; x++) {
+    frame_buffer->buffer[start_y * frame_buffer->width + x] = '-';
+    frame_buffer->buffer[(start_y + menu.height - 1) * frame_buffer->width + x] = '-';
+  }
+
+  unsigned int current_char = 0;
+  for (unsigned int y = 1; y < menu.height - 1; y++) {
+    for(unsigned int x = 2; x < menu.width - 2; x++) {
+      if (current_char == menu.content_len) { return 0; }
+
+      switch (menu.content[current_char]) {
+        case '\n':
+          frame_buffer->buffer[(y + start_y) * frame_buffer->width + x + start_x] = ' ';
+          break;
+
+        default:
+          frame_buffer->buffer[(y + start_y) * frame_buffer->width + x + start_x] = menu.content[current_char];
+          current_char++;
+
+          break;
+      }
+    }
+
+    if (menu.content[current_char] == '\n') { current_char++; }
+  }
 
   return 0;
 }

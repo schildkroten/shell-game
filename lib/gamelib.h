@@ -24,7 +24,7 @@ typedef struct {
 
 int init_game_manager(GameManager *gm);
 
-int draw_map(GameManager gm, FrameBuffer *frame_buffer, int start_x, int start_y);
+int draw_map(GameManager gm, unsigned int start_x, unsigned int start_y, FrameBuffer *frame_buffer);
 
 typedef enum {
   UP,
