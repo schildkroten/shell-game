@@ -65,7 +65,8 @@ typedef struct {
   char *content;
 } Menu;
 
-int init_menu(Menu *menu, size_t menu_width, size_t menu_height, const char *content, size_t content_len);
+int init_menu(Menu *menu, size_t menu_width, size_t menu_height, const char *content, size_t content_len, ObjectTracker **tracker);
+int update_menu_content(Menu *menu, const char *content, size_t content_len, ObjectTracker **tracker);
 int draw_menu(Menu menu, unsigned int start_x, unsigned int start_y, FrameBuffer *frame_buffer);
 
 #endif

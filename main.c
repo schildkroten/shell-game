@@ -26,21 +26,29 @@ int main() {
   atexit(cleanup);
 
   GameManager gm = GAME_MANAGER_BASE;
-  if (init_game_manager(&gm) == -1) { die("init_game_manager"); }
-  if (track_object(&tracker, gm.map.map) == -1) { die("track_object"); }
+  if (init_game_manager(&gm, &tracker) == -1) { die("init_game_manager"); }
 
   Menu inventory = MENU_BASE;
-  if (init_menu(&inventory, gm.win_width - gm.map.width - 1, gm.win_height, "Inventory", 9) == -1) {
+  if (init_menu(&inventory, gm.win_width - gm.map.width - 1, gm.win_height, "", 1, &tracker) == -1) {
     die("init_menu");
   }
 
-  if (track_object(&tracker, inventory.content) == -1) { die("track_object"); }
+  size_t buf_size = (inventory.width - 2) * (inventory.height - 2);
+  char *buf;
 
   while (1) {
     FrameBuffer frame_buffer = FRAME_BUFFER_BASE;
     if (init_frame_buffer(&frame_buffer, gm.win_width, gm.win_height) == -1) {
       die("init_frame_buffer");
     }
+
+    buf = (char *)malloc(buf_size * sizeof(char));
+
+    if (inventory_to_str(gm, buf, buf_size * sizeof(char)) == -1) { die("inventory_to_str"); }
+
+    if (update_menu_content(&inventory, buf, strlen(buf), &tracker) == -1) { die("update_menu_content"); }
+    
+    free(buf);
 
     write(STDOUT_FILENO, "\x1b[?25l", 6);
     write(STDOUT_FILENO, "\x1b[H", 3);
@@ -78,8 +86,17 @@ int main() {
         if (move_player(&gm, RIGHT) == -1) { die("move_player"); }
         break;
 
+      case '1':
+        if (add_item_to_inventory(&gm, WOOD, NULL, '/', &tracker) == -1) { die("add_to_inventory"); }
+        break;
+
+      case '2':
+        if (add_item_to_inventory(&gm, STONE, NULL, '*', &tracker) == -1) { die("add_to_inventory"); }
+        break;
+
       case CTRL_KEY('q'):
         exit(0);
+        break;
 
       default:
         break;

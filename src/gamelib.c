@@ -1,10 +1,24 @@
+#include <stdio.h>
 #include <string.h>
 #include <errno.h>
 
 #include "../lib/engine.h"
 
+typedef enum {
+  WOOD,
+  STONE
+} ItemId;
+
+typedef struct Item {
+  ItemId id;
+  void *data;
+  char symbol;
+  struct Item *next;
+} Inventory;
+
 typedef struct {
   unsigned int x, y;
+  Inventory *inventory;
 } Player;
 
 typedef struct {
@@ -20,13 +34,18 @@ typedef struct {
   Map map;
 } GameManager;
 
-int init_game_manager(GameManager *gm) {
+int init_game_manager(GameManager *gm, ObjectTracker **tracker) {
   if (gm == NULL) {
     errno = EINVAL;
     return -1;
   }
 
   if (gm->map.map != NULL) {
+    errno = EINVAL;
+    return -1;
+  }
+
+  if (tracker == NULL) {
     errno = EINVAL;
     return -1;
   }
@@ -47,6 +66,67 @@ int init_game_manager(GameManager *gm) {
 
   memset(gm->map.map, ',', gm->map.width * gm->map.height * sizeof(char));
 
+  if (track_object(tracker, gm->map.map) == -1) { return -1; } 
+
+  return 0;
+}
+
+int add_item_to_inventory(GameManager *gm, ItemId id, void *data, char symbol, ObjectTracker **tracker) {
+  if (gm == NULL) {
+    errno = EINVAL;
+    return -1;
+  }
+
+  if (tracker == NULL) {
+    errno = EINVAL;
+    return -1;
+  }
+
+  struct Item *new_item = (struct Item *)malloc(sizeof(struct Item));
+
+  if (new_item == NULL) { return -1; }
+
+  if (track_object(tracker, new_item) == -1) { return -1; }
+
+  new_item->id = id;
+  new_item->data = data;
+  new_item->symbol = symbol;
+  new_item->next = NULL;
+
+  if (gm->player.inventory == NULL) {
+    gm->player.inventory = new_item;
+    return 0;
+  }
+
+  struct Item *p = gm->player.inventory;
+  while (p->next != NULL) { p = p->next; }
+
+  p->next = new_item;
+
+  return 0;
+}
+
+int inventory_to_str(GameManager gm, char *buf, size_t buf_size) {
+  if (buf == NULL) {
+    errno = EINVAL;
+    return -1;
+  }
+
+  if (buf_size < 1) {
+    errno = EINVAL;
+    return -1;
+  }
+
+  struct Item *p = gm.player.inventory;
+  unsigned int i = 0;
+  while (p != NULL && i < buf_size - 1) {
+    buf[i] = p->symbol;
+    p = p->next;
+    i++;
+  }
+
+  buf[i] = '\0';
+
   return 0;
 }
 
@@ -57,14 +137,10 @@ int draw_map(GameManager gm, unsigned int start_x, unsigned int start_y, FrameBu
   }
 
   for (size_t y = start_y; y < gm.map.height + start_y; y++) {
-    for (size_t x = start_x; x < gm.map.width + start_x; x++) {
-      if (x == gm.player.x && y == gm.player.y) {
-        frame_buffer->buffer[y * frame_buffer->width + x] = '@';
-      } else {
-        frame_buffer->buffer[y * frame_buffer->width + x] = gm.map.map[y * gm.map.width + x];
-      }
-    }
+    memcpy(&frame_buffer->buffer[y * frame_buffer->width + start_x], &gm.map.map[y * gm.map.width], gm.map.width);
   }
+
+  frame_buffer->buffer[gm.player.y * frame_buffer->width + gm.player.x] = '@';
 
   return 0;
 }

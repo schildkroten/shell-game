@@ -75,8 +75,6 @@ int free_tracked_objects(ObjectTracker **tracker) {
   struct Object *object = *tracker;
   struct Object *tmp;
   while (object != NULL) {
-    printf("freeing object %p\r\n", object->ptr);
-
     tmp = object;
     object = object->next;
 
@@ -327,7 +325,7 @@ typedef struct {
   char *content;
 } Menu;
 
-int init_menu(Menu *menu, size_t menu_width, size_t menu_height, const char *content, size_t content_len) {
+int init_menu(Menu *menu, size_t menu_width, size_t menu_height, const char *content, size_t content_len, ObjectTracker **tracker) {
   if (menu == NULL) {
     errno = EINVAL;
     return -1;
@@ -348,13 +346,52 @@ int init_menu(Menu *menu, size_t menu_width, size_t menu_height, const char *con
     return -1;
   }
 
+  if (tracker == NULL) {
+    errno = EINVAL;
+    return -1;
+  }
+
   menu->width = menu_width;
   menu->height = menu_height;
 
   menu->content_len = content_len;
-  menu->content = (char *)malloc(content_len * sizeof(char));
+  menu->content = (char *)malloc(content_len * sizeof(char) + 1);
 
   if (menu->content == NULL) { return -1; }
+
+  if (track_object(tracker, menu->content) == -1) { return -1; }
+
+  memcpy(menu->content, content, menu->content_len);
+
+  return 0;
+}
+
+int update_menu_content(Menu *menu, const char *content, size_t content_len, ObjectTracker **tracker) {
+  if (menu == NULL) {
+    errno = EINVAL;
+    return -1;
+  }
+
+  if (content == NULL) {
+    errno = EINVAL;
+    return -1;
+  }
+
+  if (content_len < 0) {
+    errno = EINVAL;
+    return -1;
+  }
+
+  if (untrack_object(tracker, menu->content) == -1) { return -1; }
+
+  free(menu->content);
+
+  menu->content_len = content_len;
+  menu->content = (char *)malloc(content_len * sizeof(char) + 1);
+
+  if (menu->content == NULL) { return -1; }
+
+  if (track_object(tracker, menu->content) == -1) { return -1; }
 
   memcpy(menu->content, content, menu->content_len);
 
