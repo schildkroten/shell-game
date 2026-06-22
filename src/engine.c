@@ -75,6 +75,8 @@ int free_tracked_objects(ObjectTracker **tracker) {
   struct Object *object = *tracker;
   struct Object *tmp;
   while (object != NULL) {
+    printf("%p\r\n", object->ptr);
+
     tmp = object;
     object = object->next;
 
@@ -207,14 +209,6 @@ int get_cursor_pos(unsigned int *x_res, unsigned int *y_res) {
   if (buffer[0] != '\x1b' || buffer[1] != '[') { return -1; }
 
   if (sscanf(&buffer[2], "%d;%d", y_res, x_res) != 2) { return -1; }
-
-  return 0;
-}
-
-int move_cursor_to(unsigned int x, unsigned int y) {
-  char buffer[32];
-  snprintf(buffer, sizeof(buffer), "\x1b[%d;%dH", y + 1, x + 1);
-  write(STDOUT_FILENO, buffer, strlen(buffer));
 
   return 0;
 }

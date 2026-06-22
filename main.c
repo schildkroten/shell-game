@@ -33,8 +33,7 @@ int main() {
     die("init_menu");
   }
 
-  size_t buf_size = (inventory.width - 2) * (inventory.height - 2);
-  char *buf;
+  char buf[INVENTORY_SIZE];
 
   while (1) {
     FrameBuffer frame_buffer = FRAME_BUFFER_BASE;
@@ -42,14 +41,10 @@ int main() {
       die("init_frame_buffer");
     }
 
-    buf = (char *)malloc(buf_size * sizeof(char));
-
-    if (inventory_to_str(gm, buf, buf_size * sizeof(char)) == -1) { die("inventory_to_str"); }
+    if (inventory_to_str(gm, buf, sizeof(buf)) == -1) { die("inventory_to_str"); }
 
     if (update_menu_content(&inventory, buf, strlen(buf), &tracker) == -1) { die("update_menu_content"); }
     
-    free(buf);
-
     write(STDOUT_FILENO, "\x1b[?25l", 6);
     write(STDOUT_FILENO, "\x1b[H", 3);
 
@@ -60,9 +55,7 @@ int main() {
 
     free(frame_buffer.buffer);
 
-    move_cursor_to(gm.player.x, gm.player.y);
-    gm.cursor_x = gm.player.x;
-    gm.cursor_y = gm.player.y;
+    move_cursor(&gm, gm.player.x, gm.player.y);
 
     write(STDOUT_FILENO, "\x1b[?25h", 6);
 
@@ -84,14 +77,6 @@ int main() {
 
       case ARROW_RIGHT:
         if (move_player(&gm, RIGHT) == -1) { die("move_player"); }
-        break;
-
-      case '1':
-        if (add_item_to_inventory(&gm, WOOD, NULL, '/', &tracker) == -1) { die("add_to_inventory"); }
-        break;
-
-      case '2':
-        if (add_item_to_inventory(&gm, STONE, NULL, '*', &tracker) == -1) { die("add_to_inventory"); }
         break;
 
       case CTRL_KEY('q'):

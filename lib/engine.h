@@ -33,7 +33,6 @@ int get_keypress();
 
 int get_window_size(size_t *cols_res, size_t *rows_res);
 int get_cursor_pos(unsigned int *x_res, unsigned int *y_res);
-int move_cursor_to(unsigned int x, unsigned int y);
 
 void reset_screen();
 

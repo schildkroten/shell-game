@@ -4,20 +4,48 @@
 #include "engine.h"
 
 typedef enum {
+  TOOL,
+  RESOURCE
+} ItemType;
+
+typedef enum {
+  PICKAXE,
+  AXE
+} ToolId;
+
+typedef struct {
+  ToolId id;
+  unsigned int damage;
+  unsigned int durability;
+  unsigned int breaking_power;
+} ToolData;
+
+typedef enum {
   WOOD,
   STONE
-} ItemId;
+} ResourceId;
 
-typedef struct Item {
-  ItemId type;
-  void *data;
+typedef struct {
+  ResourceId id;
+} ResourceData;
+
+typedef struct {
+  ItemType type;
   char symbol;
-  struct Item *next;
+  void *data;
+} Item;
+
+Item *create_item(ItemType type, char symbol, void *data);
+
+typedef struct {
+  Item *item;
 } Inventory;
+
+#define INVENTORY_SIZE 50
 
 typedef struct {
   unsigned int x, y;
-  Inventory *inventory;
+  Inventory inventory[INVENTORY_SIZE];
 } Player;
 
 typedef struct {
@@ -25,7 +53,7 @@ typedef struct {
   char *map;
 } Map;
 
-#define GAME_MANAGER_BASE {0, 0, 0, 0, {0, 0, NULL}, {0, 0, NULL}}
+#define GAME_MANAGER_BASE {0, 0, 0, 0, {0, 0, {[0 ... INVENTORY_SIZE - 1] = {NULL}}}, {0, 0, NULL}}
 
 typedef struct {
   size_t win_width, win_height;
@@ -37,7 +65,8 @@ typedef struct {
 
 int init_game_manager(GameManager *gm, ObjectTracker **tracker);
 
-int add_item_to_inventory(GameManager *gm, ItemId id, void *data, char symbol, ObjectTracker **tracker);
+int add_to_inventory(GameManager *gm, Item *item);
+int remove_from_inventory(GameManager *gm, Item *item);
 int inventory_to_str(GameManager gm, char *buf, size_t buf_size);
 
 int draw_map(GameManager gm, unsigned int start_x, unsigned int start_y, FrameBuffer *frame_buffer);
@@ -50,5 +79,7 @@ typedef enum {
 } Direction;
 
 int move_player(GameManager *gm, Direction direction);
+
+int move_cursor(GameManager *gm, unsigned int x, unsigned int y);
 
 #endif
