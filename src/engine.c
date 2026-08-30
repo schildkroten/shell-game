@@ -1,3 +1,5 @@
+/* General purpose IO library created by Angus Bonney 2026 */
+
 #include <termios.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -6,10 +8,7 @@
 #include <errno.h>
 #include <sys/ioctl.h>
 
-typedef struct Object {
-  void *ptr;
-  struct Object *next;
-} ObjectTracker;
+#include "../lib/engine.h"
 
 int track_object(ObjectTracker **tracker, void *object_ptr) {
   if (tracker == NULL) {
@@ -87,22 +86,10 @@ int free_tracked_objects(ObjectTracker **tracker) {
   return 0;
 }
 
-#define CTRL_KEY(k) ((k) & 0x1f)
-
-enum Keys {
-  ARROW_UP = 1000,
-  ARROW_DOWN,
-  ARROW_LEFT,
-  ARROW_RIGHT,
-  DEL_KEY,
-  HOME_KEY,
-  END_KEY,
-  PAGE_UP,
-  PAGE_DOWN
-};
-
+/* The original terminal settings. */
 struct termios orig_terminal;
 
+/* Restores the original terminal settings. */
 void disable_raw_mode() {
   if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_terminal) == -1) {
     perror("disable_raw_mode");
@@ -110,6 +97,7 @@ void disable_raw_mode() {
   }
 }
 
+/* Enables raw mode. */
 void enable_raw_mode() {
   if (tcgetattr(STDIN_FILENO, &orig_terminal) == -1) {
     perror("enable_raw_mode");
@@ -136,10 +124,13 @@ int get_keypress() {
   int nread;
   char c;
 
+  /* Wait for a keypress to be recived. */
   while ((nread = read(STDIN_FILENO, &c, 1)) != 1) {
     if (nread == -1 && errno != EAGAIN) { return -1; }
   }
 
+  /* If the character recived is an escape character
+   * handle that. */
   if (c == '\x1b') {
     char seq[3];
 
@@ -180,6 +171,7 @@ int get_keypress() {
     return '\x1b';
   }
 
+  /* Otherwise just return the character recived. */
   return c;
 }
 
@@ -218,13 +210,6 @@ void reset_screen() {
   write(STDOUT_FILENO, "\x1b[H", 3);
 }
 
-#define INIT_APPEND_BUFFER {0, NULL}
-
-typedef struct {
-  size_t len;
-  char *buffer;
-} AppendBuffer;
-
 int append_to_buffer(AppendBuffer *append_buffer, char *str, size_t str_len) {
   if (append_buffer == NULL) {
     errno = EINVAL;
@@ -247,11 +232,6 @@ int append_to_buffer(AppendBuffer *append_buffer, char *str, size_t str_len) {
   return 0;
 }
 
-typedef struct {
-  size_t width, height;
-  char *buffer;
-} FrameBuffer;
-
 int init_frame_buffer(FrameBuffer *frame_buffer, size_t frame_width, size_t frame_height) {
   if (frame_buffer == NULL) {
     errno = EINVAL;
@@ -268,19 +248,23 @@ int init_frame_buffer(FrameBuffer *frame_buffer, size_t frame_width, size_t fram
     return -1;
   }
 
-  frame_buffer->buffer = (char *)malloc(frame_width * frame_height * sizeof(char));
+  frame_buffer->buffer = (char *)malloc(frame_width * frame_height * sizeof(char) + 1);
 
   if (frame_buffer->buffer == NULL) { return -1; }
 
   memset(frame_buffer->buffer, ' ', frame_width * frame_height * sizeof(char));
 
+  frame_buffer->buffer[frame_width * frame_height] = '\0';
   frame_buffer->width = frame_width;
   frame_buffer->height = frame_height;
 
   return 0;
 }
 
-int write_frame_buffer(FrameBuffer frame_buffer) {
+/* In this function I decided to move the FrameBuffer into an AppendBuffer so
+ * there wouldn't be a bunch of small writes to the screen which can cause
+ * flickering. */
+int write_frame(FrameBuffer frame_buffer) {
   if (frame_buffer.buffer == NULL) {
     errno = EINVAL;
     return -1;
@@ -292,6 +276,9 @@ int write_frame_buffer(FrameBuffer frame_buffer) {
   }
 
   AppendBuffer append_buffer = INIT_APPEND_BUFFER;
+
+  append_to_buffer(&append_buffer, "\x1b[?25l", 6);
+  append_to_buffer(&append_buffer, "\x1b[H", 3);
 
   for (unsigned int row = 0; row < frame_buffer.height; row++) {
     if (append_to_buffer(&append_buffer, &frame_buffer.buffer[row * frame_buffer.width], frame_buffer.width) == -1) {
@@ -305,6 +292,8 @@ int write_frame_buffer(FrameBuffer frame_buffer) {
     if (append_to_buffer(&append_buffer, "\r\n", 2) == -1) { return -1; }
   }
 
+  append_to_buffer(&append_buffer, "\x1b[?25h", 6);
+
   write(STDOUT_FILENO, append_buffer.buffer, append_buffer.len);
 
   free(append_buffer.buffer);
@@ -312,127 +301,4 @@ int write_frame_buffer(FrameBuffer frame_buffer) {
   return 0;
 }
 
-typedef struct {
-  size_t width, height;
 
-  size_t content_len;
-  char *content;
-} Menu;
-
-int init_menu(Menu *menu, size_t menu_width, size_t menu_height, const char *content, size_t content_len, ObjectTracker **tracker) {
-  if (menu == NULL) {
-    errno = EINVAL;
-    return -1;
-  }
-
-  if (content == NULL) {
-    errno = EINVAL;
-    return -1;
-  }
-
-  if (menu_width < 1 || menu_height < 1) {
-    errno = EINVAL;
-    return -1;
-  }
-
-  if (content_len < 1) {
-    errno = EINVAL;
-    return -1;
-  }
-
-  if (tracker == NULL) {
-    errno = EINVAL;
-    return -1;
-  }
-
-  menu->width = menu_width;
-  menu->height = menu_height;
-
-  menu->content_len = content_len;
-  menu->content = (char *)malloc(content_len * sizeof(char) + 1);
-
-  if (menu->content == NULL) { return -1; }
-
-  if (track_object(tracker, menu->content) == -1) { return -1; }
-
-  memcpy(menu->content, content, menu->content_len);
-
-  return 0;
-}
-
-int update_menu_content(Menu *menu, const char *content, size_t content_len, ObjectTracker **tracker) {
-  if (menu == NULL) {
-    errno = EINVAL;
-    return -1;
-  }
-
-  if (content == NULL) {
-    errno = EINVAL;
-    return -1;
-  }
-
-  if (content_len < 0) {
-    errno = EINVAL;
-    return -1;
-  }
-
-  if (untrack_object(tracker, menu->content) == -1) { return -1; }
-
-  free(menu->content);
-
-  menu->content_len = content_len;
-  menu->content = (char *)malloc(content_len * sizeof(char) + 1);
-
-  if (menu->content == NULL) { return -1; }
-
-  if (track_object(tracker, menu->content) == -1) { return -1; }
-
-  memcpy(menu->content, content, menu->content_len);
-
-  return 0;
-}
-
-int draw_menu(Menu menu, unsigned int start_x, unsigned int start_y, FrameBuffer *frame_buffer) {
-  if (frame_buffer == NULL) {
-    errno = EINVAL;
-    return -1;
-  }
-
-  frame_buffer->buffer[start_y * frame_buffer->width + start_x] = '+';
-  frame_buffer->buffer[start_y * frame_buffer->width + start_x + menu.width - 1] = '+';
-  frame_buffer->buffer[(start_y + menu.height - 1) * frame_buffer->width + start_x] = '+';
-  frame_buffer->buffer[(start_y + menu.height - 1) * frame_buffer->width + start_x + menu.width - 1] = '+';
-
-  for (unsigned int y = start_y + 1; y < menu.height + start_y - 1; y++) {
-    frame_buffer->buffer[y * frame_buffer->width + start_x] = '|';
-    frame_buffer->buffer[y * frame_buffer->width + start_x + menu.width - 1] = '|';
-  }
-
-  for (unsigned int x = start_x + 1; x < menu.width + start_x - 1; x++) {
-    frame_buffer->buffer[start_y * frame_buffer->width + x] = '-';
-    frame_buffer->buffer[(start_y + menu.height - 1) * frame_buffer->width + x] = '-';
-  }
-
-  unsigned int current_char = 0;
-  for (unsigned int y = 1; y < menu.height - 1; y++) {
-    for(unsigned int x = 2; x < menu.width - 2; x++) {
-      if (current_char == menu.content_len) { return 0; }
-
-      switch (menu.content[current_char]) {
-        case '\n':
-          frame_buffer->buffer[(y + start_y) * frame_buffer->width + x + start_x] = ' ';
-          break;
-
-        default:
-          frame_buffer->buffer[(y + start_y) * frame_buffer->width + x + start_x] = menu.content[current_char];
-          current_char++;
-
-          break;
-      }
-    }
-
-    if (menu.content[current_char] == '\n') { current_char++; }
-  }
-
-  return 0;
-}
