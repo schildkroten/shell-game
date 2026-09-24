@@ -59,6 +59,18 @@ void setup() {
 
   if (init_menu(&inventory_menu, 30, 12, inventory_buff, INVENTORY_SIZE, &tracker) == -1) { die("init_menu"); }
   if (init_menu(&stats_menu, 30, 12, stats_buff, strlen(stats_buff), &tracker) == -1) { die("init_menu"); }
+
+  /* Spawn some enemys */
+  num_enemys = rand() % 4 + 1;
+  for (unsigned int i = 0; i < num_enemys; i++) {
+    Enemy *new_enemy = create_enemy(rand() % gm.map.width , rand() % gm.map.height, 10, 0, NULL);
+
+    if (new_enemy == NULL) { die("create_enemy"); }
+
+    if (track_object(&tracker, new_enemy) == -1) { die("track_object"); }
+
+    gm.enemys[i] = new_enemy;
+  }
 }
 
 /* Update gets run every frame. */
@@ -84,6 +96,20 @@ void update() {
       if (move_player(&gm, RIGHT) == -1) { die("move_player"); }
       break;
 
+    case '1':
+      Item *wood = create_item(RESOURCE, '/', NULL);
+      if (track_object(&tracker, wood) == -1) { die("track_object"); }
+      if (add_to_inventory(&gm, wood) == -1) { die("add_to_inventory"); }
+      enemys_move = 0;
+      break;
+
+    case '2':
+      Item *stone = create_item(RESOURCE, '*', NULL);
+      if (track_object(&tracker, stone) == -1) { die("track_object"); }
+      if (add_to_inventory(&gm, stone) == -1) { die("add_to_inventory"); }
+      enemys_move = 0;
+      break;
+
     case CTRL_KEY('q'):
       exit(0);
       break;
@@ -92,61 +118,33 @@ void update() {
       break;
   }
 
-  /* If there are no enemys spawn some. */
-  if (num_enemys == 0) {
-    num_enemys = rand() % 4 + 1;
-    for (unsigned int i = 0; i < num_enemys; i++) {
-      Enemy *new_enemy = create_enemy(rand() % gm.map.width , rand() % gm.map.height, 10, 0, NULL);
-
-      if (new_enemy == NULL) { die("create_enemy"); }
-
-      if (track_object(&tracker, new_enemy) == -1) { die("track_object"); }
-
-      gm.enemys[i] = new_enemy;
-    }
-  } else {
+  if (enemys_move) {
     /* Else handle the movement of the enemys. */
-    if (enemys_move) {
-      for (unsigned int i = 0; i < MAX_ENEMYS - 1; i++) {
-        if (gm.enemys[i] == NULL) { continue; }
+    for (unsigned int i = 0; i < MAX_ENEMYS - 1; i++) {
+      if (gm.enemys[i] == NULL) { continue; }
 
-        int8_t x_diff = gm.player.x - gm.enemys[i]->x;
-        int8_t y_diff = gm.player.y - gm.enemys[i]->y;
+      int8_t x_diff = gm.player.x - gm.enemys[i]->x;
+      int8_t y_diff = gm.player.y - gm.enemys[i]->y;
 
-        if ((x_diff & 0x7F) >= 1.5 * (y_diff & 0x7F)) {
-          if (x_diff >= 0) {
-            if (gm.enemys[i]->x + 1 == gm.player.x) {
-              gm.player.health--;
-            } else {
-              gm.enemys[i]->x++;
-            }
-          } else {
-            if (gm.enemys[i]->x - 1 == gm.player.x) {
-              gm.player.health--;
-            } else {
-              gm.enemys[i]->x--;
-            }
-          }
-        } else {
-          if (y_diff >= 0) {
-            if (gm.enemys[i]->y + 1 == gm.player.y) {
-              gm.player.health--;
-            } else {
-              gm.enemys[i]->y++;
-            }
-          } else {
-            if (gm.enemys[i]->y - 1 == gm.player.y) {
-              gm.player.health--;
-            } else {
-              gm.enemys[i]->y--;
-            }
-          }
-        }
+      int8_t dx = 0;
+      int8_t dy = 0;
+
+      if ((x_diff & 0x7F) >= 2 * (y_diff & 0x7F)) {
+        x_diff >= 0 ? dx++ : dx--;
+      } else {
+        y_diff >= 0 ? dy++ : dy--;
       }
-      enemys_move = 0;
-    } else {
-      enemys_move = 1;
+
+      if (gm.enemys[i]->x + dx == gm.player.x && gm.enemys[i]->y + dy == gm.player.y) {
+        gm.player.health--;
+      } else {
+        gm.enemys[i]->x += dx;
+        gm.enemys[i]->y += dy;
+      }
     }
+    enemys_move = 0;
+  } else {
+    enemys_move = 1;
   }
 
   /* Update menus content */
