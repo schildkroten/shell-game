@@ -205,6 +205,8 @@ int draw_map(GameManager *gm, unsigned int start_x, unsigned int start_y, FrameB
 }
 
 int move_player(GameManager *gm, Direction direction) {
+  static int moves = 0;
+
   if (gm == NULL) {
     errno = EINVAL;
     return -1;
@@ -233,6 +235,21 @@ int move_player(GameManager *gm, Direction direction) {
 
     default:
       return 0;
+  }
+
+  moves++;
+
+  if (moves % 5 == 0) {
+    if (gm->player.thirst < 100) {
+      gm->player.thirst++;
+    }
+  }
+
+  if (moves / 10 == 1) {
+    moves = 0;
+    if (gm->player.hunger < 100) {
+      gm->player.hunger++;
+    }
   }
 
   return 0;

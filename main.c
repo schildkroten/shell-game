@@ -58,7 +58,7 @@ void setup() {
   if (stats_to_str(&gm, stats_buff, 256) == -1) { die("stats_to_str"); }
 
   if (init_menu(&inventory_menu, 30, 12, inventory_buff, INVENTORY_SIZE, &tracker) == -1) { die("init_menu"); }
-  if (init_menu(&stats_menu, 30, 12, stats_buff, strlen(stats_buff), &tracker) == -1) { die("init_menu"); }
+  if (init_menu(&stats_menu, 30, 12, stats_buff, strlen(stats_buff) + 1, &tracker) == -1) { die("init_menu"); }
 
   /* Spawn some enemys */
   num_enemys = rand() % 4 + 1;
@@ -154,8 +154,8 @@ void update() {
   if (inventory_to_str(&gm, inventory_buff, INVENTORY_SIZE) == -1) { die("inventory_to_str"); }
   if (update_menu_content(&inventory_menu, inventory_buff, INVENTORY_SIZE, &tracker) == -1) { die("update_menu_content_1"); }
 
-  if (stats_to_str(&gm, stats_buff, 256) == -1) { die("stats_to_str"); }
-  if (update_menu_content(&stats_menu, stats_buff, strlen(stats_buff), &tracker) == -1) { die("update_menu_content_2"); }
+  if (stats_to_str(&gm, stats_buff, sizeof(stats_buff)) == -1) { die("stats_to_str"); }
+  if (update_menu_content(&stats_menu, stats_buff, strlen(stats_buff) + 1, &tracker) == -1) { die("update_menu_content_2"); }
 }
 
 /* The draw function gets run every frame after the update
